@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>数据质量监控 · 每周预警简报</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Spline+Sans:wght@400;500;600&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+  :root{
+    --paper:#f4efe5; --card:#fffdf8; --ink:#1b1915; --ink-soft:#5d574b; --ink-faint:#938b7b;
+    --line:#e6ddcd; --brand:#14524b; --brand-soft:#e4efe9;
+    --danger:#c23a2b; --warn:#c0850b; --ok:#2f8f6f; --info:#3a6ea5;
+    --disp:"Bricolage Grotesque","PingFang SC","Microsoft YaHei",sans-serif;
+    --body:"Spline Sans","PingFang SC","Microsoft YaHei",sans-serif;
+    --mono:"Spline Sans Mono","SF Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--body);color:var(--ink);background:var(--paper);line-height:1.6;-webkit-font-smoothing:antialiased;padding:18px 0}
+  .tnum{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+  .disp{font-family:var(--disp)}
+
+  .phone{max-width:412px;margin:0 auto;background:#fbfaf6;overflow:hidden}
+
+  .rep-head{background:linear-gradient(135deg,#10403a,#16584f 55%,#1d6b5e);color:#eafff8;padding:20px 20px 18px;position:relative;overflow:hidden}
+  .rep-head::after{content:"";position:absolute;right:-40px;top:-50px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.12),transparent 65%)}
+  .rep-head .eyebrow{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;opacity:.8;margin-bottom:8px}
+  .rep-head h2{font-family:var(--disp);font-weight:800;font-size:21px;line-height:1.15;letter-spacing:-.01em}
+  .rep-head .sub{display:flex;flex-direction:column;gap:4px;margin-top:12px;font-size:11.5px;opacity:.92}
+
+  .rep-body{padding:16px}
+  .kpi-banner{background:linear-gradient(135deg,#c23a2b,#a82e21);color:#fff;border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:14px;position:relative;overflow:hidden;box-shadow:0 8px 20px -10px rgba(194,58,43,.6)}
+  .kpi-banner::after{content:"⚠";position:absolute;right:-6px;bottom:-14px;font-size:64px;opacity:.14}
+  .kpi-banner .big{font-family:var(--disp);font-weight:800;font-size:42px;line-height:1}
+  .kpi-banner .meta .l1{font-size:13px;font-weight:600}
+  .kpi-banner .meta .l2{font-size:11px;opacity:.85;margin-top:2px}
+  .kpi-banner .tag{margin-left:auto;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);border-radius:999px;padding:4px 11px;font-size:11px;font-weight:600;align-self:flex-start}
+
+  .kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+  .kpi{background:#fff;border:1px solid #eee3cf;border-radius:12px;padding:13px 14px;position:relative}
+  .kpi .acc{position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:3px}
+  .kpi .lab{font-size:11px;color:var(--ink-faint);margin-bottom:6px}
+  .kpi .val{font-family:var(--disp);font-weight:800;font-size:27px;line-height:1;letter-spacing:-.02em}
+  .kpi .delta{font-size:10.5px;margin-top:7px;display:inline-flex;gap:3px;font-weight:500}
+  .kpi .sub{font-size:10.5px;color:var(--ink-faint);margin-top:6px}
+  .kpi .sub b{color:var(--danger);font-weight:600}
+  .kpi.brand .val{color:var(--brand)} .kpi.warn .val{color:var(--warn)} .kpi.ok .val{color:var(--ok)}
+  .up{color:var(--danger)} .down{color:var(--ok)}
+
+  .panel{background:#fff;border:1px solid #eee3cf;border-radius:12px;padding:14px 15px;margin-top:10px}
+  .panel .pt{font-size:13px;font-weight:600;display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .panel .ps{font-size:11px;color:var(--ink-faint);margin-top:1px}
+  .panel .badge{font-size:10px;font-weight:600;color:var(--brand);background:var(--brand-soft);padding:2px 8px;border-radius:999px;white-space:nowrap}
+  .chart{width:100%}
+
+  .rankrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #f3ebdb}
+  .rankrow:last-child{border-bottom:none}
+  .rankrow .rk{width:21px;height:21px;border-radius:6px;flex:none;display:grid;place-items:center;font-family:var(--mono);font-size:11px;font-weight:700;color:#fff;background:var(--ink-faint)}
+  .rankrow.t1 .rk{background:var(--danger)} .rankrow.t2 .rk{background:#d2622c} .rankrow.t3 .rk{background:var(--warn)}
+  .rankrow .nm{font-size:12.5px;width:74px;flex:none;color:var(--ink);font-weight:500}
+  .rankrow .bar{flex:1;height:9px;border-radius:999px;background:#f0e8d6;overflow:hidden}
+  .rankrow .bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#c0850b,#c23a2b)}
+  .rankrow .cnt{font-family:var(--mono);font-size:13.5px;font-weight:700;color:var(--danger);width:26px;text-align:right;flex:none}
+
+  .insight{background:linear-gradient(135deg,#f3efe5,#fbfaf6);border:1px dashed #d9cfb8;border-radius:12px;padding:14px 15px;margin-top:12px}
+  .insight .ih{font-size:11.5px;font-weight:700;color:var(--brand);display:flex;align-items:center;gap:7px;margin-bottom:10px;text-transform:uppercase;letter-spacing:.06em}
+  .insight ul{list-style:none}
+  .insight li{font-size:12.5px;color:var(--ink);padding-left:23px;position:relative;margin-bottom:9px;line-height:1.55}
+  .insight li:last-child{margin-bottom:0}
+  .insight li::before{content:attr(data-i);position:absolute;left:0;top:1px;font-family:var(--mono);font-size:10.5px;color:#fff;background:var(--brand);width:16px;height:16px;border-radius:50%;display:grid;place-items:center}
+  .rep-foot{padding:14px 16px 20px;border-top:1px solid #f0e8d6;margin-top:12px;font-size:10.5px;color:var(--ink-faint);text-align:center;line-height:1.7}
+  .rep-foot .chs{display:flex;gap:7px;justify-content:center;margin-top:8px;flex-wrap:wrap}
+  .rep-foot .ch{display:inline-flex;align-items:center;gap:4px;background:#f3efe5;border-radius:999px;padding:4px 10px}
+</style>
+</head>
+<body>
+<div class="phone" id="phone">
+  <div class="rep-head">
+    <div class="eyebrow">WEEKLY QUALITY BRIEFING</div>
+    <h2 class="disp">数据质量监控<br/>每周预警简报</h2>
+    <div class="sub">
+      <span id="h-period">📅 本期 —</span>
+      <span>🔁 环比 较上周（前一周同期）</span>
+      <span>🤖 由 OpenClaw · skill-quality-briefing 生成</span>
+    </div>
+  </div>
+  <div class="rep-body">
+    <div class="kpi-banner">
+      <div class="big tnum" id="k-overdue">0</div>
+      <div class="meta"><div class="l1">待处理中超 3 天未闭环</div><div class="l2" id="k-overdue-sub">—</div></div>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi brand"><span class="acc" style="background:var(--brand)"></span><div class="lab">预警总数</div><div class="val tnum" id="k-total">0</div><div class="delta" id="k-total-d">—</div></div>
+      <div class="kpi"><span class="acc" style="background:var(--info)"></span><div class="lab">今日新增预警</div><div class="val tnum" id="k-new">0</div><div class="delta" id="k-new-d">—</div></div>
+      <div class="kpi warn"><span class="acc" style="background:var(--warn)"></span><div class="lab">待处理预警数</div><div class="val tnum" id="k-pending">0</div><div class="sub" id="k-pending-sub">—</div></div>
+      <div class="kpi ok"><span class="acc" style="background:var(--ok)"></span><div class="lab">已处理预警数</div><div class="val tnum" id="k-proc">0</div><div class="sub" id="k-proc-sub">—</div></div>
+    </div>
+
+    <div class="panel">
+      <div class="pt"><span>预警状态占比</span><span class="badge">环形图</span></div>
+      <div class="ps">已处理 vs 待处理 · 中心为预警总数</div>
+      <div id="c-status" class="chart" style="height:210px"></div>
+    </div>
+
+    <div class="panel">
+      <div class="pt"><span>近 7 日预警趋势</span><span class="badge">峰值红标</span></div>
+      <div class="ps" id="p-trend-sub">按日触发量（单位：起）</div>
+      <div id="c-trend" class="chart" style="height:205px"></div>
+    </div>
+
+    <div class="panel">
+      <div class="pt"><span>未处理 TOP5 区域</span><span class="badge">待处理降序</span></div>
+      <div class="ps">按区域待处理预警数排名</div>
+      <div id="top-organs" style="margin-top:10px"></div>
+    </div>
+
+    <div class="insight">
+      <div class="ih">🧠 OpenClaw 本周要点</div>
+      <ul id="insights"></ul>
+    </div>
+  </div>
+  <div class="rep-foot">
+    本简报由 OpenClaw · skill-quality-briefing 单技能取数 → 分析 → 渲染 → 推送
+    <div class="chs"><span class="ch">📣 钉钉群</span><span class="ch">✉️ 邮件附件</span><span class="ch">👤 领导单发</span></div>
+  </div>
+</div>
+
+<script>
+// run.py 会把下面这行替换为真实数据；直接打开本文件则使用占位样例。
+window.__BRIEFING__ = /*__DATA__*/ {
+  "periodStart":"2025-05-19","periodEnd":"2025-05-25","total":353,"totalChainRatio":0.086,
+  "newToday":47,"newTodayChainRatio":0.093,"pending":77,"overdue3d":11,"processed":276,
+  "processRate":0.782,"processRatePrev":0.948,
+  "trendLabels":["05-19","05-20","05-21","05-22","05-23","05-24","05-25"],
+  "trend":[52,48,61,45,57,43,47],"peak":61,
+  "topPendingOrgans":[{"organName":"粤东区域","pending":20},{"organName":"长三角区域","pending":18},
+    {"organName":"川渝区域","pending":11},{"organName":"华中区域","pending":10},{"organName":"京津冀区域","pending":10}],
+  "insights":["示例要点一","示例要点二","示例要点三"]
+} /*__DATA_END__*/;
+</script>
+<script>
+const FONT='"Spline Sans","PingFang SC","Microsoft YaHei",sans-serif';
+const C={brand:'#14524b',danger:'#c23a2b',warn:'#c0850b',ok:'#2f8f6f',info:'#3a6ea5',ink:'#5d574b',line:'#efe8da'};
+const D=window.__BRIEFING__;
+const ax={axisLine:{lineStyle:{color:C.line}},axisTick:{show:false},axisLabel:{color:C.ink,fontFamily:FONT,fontSize:10.5},splitLine:{lineStyle:{color:C.line,type:'dashed'}}};
+const sign=r=>r==null?'—':(r>=0?'▲ ':'▼ ')+(r>=0?'+':'')+(r*100).toFixed(1)+'%';
+const pct=x=>x==null?'—':(x*100).toFixed(1)+'%';
+const $=id=>document.getElementById(id);
+
+function fillText(){
+  const fmtD=s=>s.slice(5).replace('-','-');
+  $('h-period').textContent=`📅 本期 ${D.periodStart} ~ ${fmtD(D.periodEnd)}`;
+  $('k-overdue').textContent=D.overdue3d;
+  $('k-overdue-sub').textContent=`占待处理 ${D.pending?Math.round(D.overdue3d/D.pending*100):0}% · 建议本周优先督办`;
+  $('k-total').textContent=D.total;
+  const td=$('k-total-d'); td.textContent=`较上周 ${sign(D.totalChainRatio)}`; td.className='delta '+((D.totalChainRatio||0)>=0?'up':'down');
+  $('k-new').textContent=D.newToday;
+  const nd=$('k-new-d'); nd.textContent=`较上周 ${sign(D.newTodayChainRatio)}`; nd.className='delta '+((D.newTodayChainRatio||0)>=0?'up':'down');
+  $('k-pending').textContent=D.pending;
+  $('k-pending-sub').innerHTML=`其中 <b>超 3 天未处理 ${D.overdue3d}</b> 起`;
+  $('k-proc').textContent=D.processed;
+  $('k-proc-sub').innerHTML=`处理率 <b style="color:var(--ok)">${pct(D.processRate)}</b> · 上周 ${pct(D.processRatePrev)}`;
+  $('p-trend-sub').textContent=`按日触发量（单位：起）· 峰值 ${D.trendLabels[D.trend.indexOf(D.peak)]||''}`;
+
+  const max=Math.max(...D.topPendingOrgans.map(o=>o.pending),1);
+  $('top-organs').innerHTML=D.topPendingOrgans.map((o,i)=>
+    `<div class="rankrow ${i<3?'t'+(i+1):''}"><span class="rk">${i+1}</span>`+
+    `<span class="nm">${o.organName}</span>`+
+    `<span class="bar"><i style="width:${Math.round(o.pending/max*100)}%"></i></span>`+
+    `<span class="cnt tnum">${o.pending}</span></div>`).join('');
+  $('insights').innerHTML=D.insights.map((t,i)=>`<li data-i="${i+1}">${t}</li>`).join('');
+}
+
+function drawCharts(){
+  const s1=echarts.init($('c-status'),null,{renderer:'canvas'});
+  s1.setOption({tooltip:{trigger:'item',textStyle:{fontFamily:FONT,fontSize:12}},
+    legend:{bottom:0,icon:'circle',textStyle:{fontFamily:FONT,fontSize:11,color:C.ink}},
+    series:[{type:'pie',radius:['52%','74%'],center:['50%','44%'],
+      label:{show:true,position:'center',formatter:'{b|预警总数}\n{c|'+D.total+'}',
+        rich:{b:{fontFamily:FONT,fontSize:11,color:C.ink},c:{fontFamily:FONT,fontSize:26,fontWeight:800,color:C.brand,lineHeight:30}}},
+      labelLine:{show:false},
+      data:[{value:D.processed,name:'已处理',itemStyle:{color:C.brand}},
+            {value:D.pending,name:'待处理',itemStyle:{color:C.warn}}]}]});
+  const s2=echarts.init($('c-trend'),null,{renderer:'canvas'});
+  s2.setOption({grid:{left:26,right:14,top:24,bottom:22},
+    tooltip:{trigger:'axis',textStyle:{fontFamily:FONT,fontSize:12}},
+    xAxis:{type:'category',data:D.trendLabels,...ax,splitLine:{show:false}},
+    yAxis:{type:'value',...ax},
+    series:[{name:'触发量',type:'line',smooth:true,data:D.trend,symbol:'circle',symbolSize:6,
+      lineStyle:{width:3,color:C.brand},itemStyle:{color:C.brand},
+      areaStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'rgba(20,82,75,.18)'},{offset:1,color:'rgba(20,82,75,0)'}])},
+      markPoint:{symbol:'pin',symbolSize:42,data:[{type:'max',name:'峰值'}],
+        itemStyle:{color:C.danger},label:{color:'#fff',fontFamily:FONT,fontSize:11,fontWeight:600}}}]});
+  window.__CHARTS_READY__=true;
+}
+
+fillText();
+if(window.echarts){drawCharts();}
+else{window.addEventListener('load',drawCharts);}
+</script>
+</body>
+</html>

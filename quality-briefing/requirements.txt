@@ -1,0 +1,4 @@
+# skill-quality-briefing 运行依赖
+pymysql>=1.1        # 直连数仓回退通道（仅 DQM_BRIEFING_SOURCE=db / 接口不可用时用）
+requests>=2.31      # 调后端统计接口、推送钉钉
+playwright>=1.40    # headless 渲染竖屏长图；安装后还需： playwright install chromium
