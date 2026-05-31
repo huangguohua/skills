@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!--
+  模式 B 任务拆解「交互式确认器」（自包含 HTML，无外部依赖，浏览器直接打开）。
+  设计哲学参考 Thariq Shihipar《The Unreasonable Effectiveness of HTML》：
+    AI 生成的是「界面」而非「内容」；人类从编写者变为审查者/使用者。
+    → 颜色编码 + 轻量 JS 交互 + 用完即弃编辑器(throwaway editor)闭环：
+      用户在页面里逐项决策（通过/需修改/删除）并填意见，点一个按钮即可生成
+      一段结构化文本，复制回 Claude 继续——形成「AI 出界面 → 人类操作 → 导回 AI」闭环。
+
+  主会话在 Step 0-B 用本模板渲染，输出到 specs-mcp/<feature>/tasks-review.html。
+  占位符：{{FEATURE}} {{MODE}} {{GENERATED_AT}} {{SUMMARY}} {{TASK_COUNT}} {{TASK_CARDS}} {{OPEN_QUESTIONS}}
+  任务卡片 {{TASK_CARDS}} 由每个任务复制 <article class="task" data-tid data-title> 片段填充。
+-->
+<title>任务拆解确认 · {{FEATURE}}</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --panel-2:#1e222b; --line:#2a2f3a;
+    --txt:#e6e9ef; --muted:#9aa3b2; --brand:#5b9dff; --brand-2:#3b82f6;
+    --ok:#34d399; --warn:#fbbf24; --bad:#f87171;
+    --p0:#ef4444; --p1:#f97316; --p2:#fbbf24; --chip:#262b36;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;}
+  .wrap{max-width:1040px;margin:0 auto;padding:32px 20px 120px;}
+  a{color:var(--brand)}
+  /* hero */
+  header.hero{background:linear-gradient(135deg,#1b2435,#141821);border:1px solid var(--line);
+    border-radius:16px;padding:28px 30px;margin-bottom:22px;}
+  .hero h1{margin:0 0 6px;font-size:24px;letter-spacing:.3px;}
+  .hero .sub{color:var(--muted);font-size:13.5px;}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;}
+  .meta .pill{background:var(--chip);border:1px solid var(--line);border-radius:999px;
+    padding:5px 12px;font-size:12.5px;color:var(--muted);}
+  .meta .pill b{color:var(--txt);font-weight:600;}
+  /* banner */
+  .banner{display:flex;gap:14px;align-items:flex-start;background:#13243a;
+    border:1px solid #214a7a;border-left:4px solid var(--brand);border-radius:12px;
+    padding:16px 18px;margin-bottom:20px;}
+  .banner .ic{font-size:20px;line-height:1.2;}
+  .banner h3{margin:0 0 4px;font-size:15px;color:var(--brand);}
+  .banner p{margin:0;color:#c7d2e0;font-size:13.5px;}
+  .summary{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:18px 20px;margin-bottom:18px;color:#cfd6e2;font-size:14px;}
+  .summary h2{margin:0 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);}
+  /* toolbar */
+  .toolbar{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+    background:rgba(15,17,21,.92);backdrop-filter:blur(6px);border:1px solid var(--line);
+    border-radius:12px;padding:12px 14px;margin-bottom:18px;}
+  .toolbar .count{font-size:13px;color:var(--muted);}
+  .toolbar .count b{color:var(--txt)}
+  .toolbar .spacer{flex:1}
+  .btn{background:var(--panel-2);color:var(--txt);border:1px solid var(--line);border-radius:8px;
+    padding:7px 13px;font-size:13px;cursor:pointer;transition:.15s;}
+  .btn:hover{border-color:var(--brand);}
+  .btn.primary{background:var(--brand-2);border-color:var(--brand-2);font-weight:600;}
+  .btn.primary:hover{filter:brightness(1.1);}
+  .badge{display:inline-block;min-width:22px;text-align:center;border-radius:6px;font-size:12px;
+    padding:2px 7px;font-weight:600;}
+  .badge.ok{background:#0e2a1e;color:var(--ok);border:1px solid #1f6f47}
+  .badge.mod{background:#2a2113;color:var(--warn);border:1px solid #5a4413}
+  .badge.del{background:#2a1416;color:var(--bad);border:1px solid #6b2326}
+  h2.section{font-size:13px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);margin:24px 4px 14px;}
+  /* task card */
+  .task{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:0;margin-bottom:14px;overflow:hidden;position:relative;transition:.15s;}
+  .task[data-state="ok"]{border-left:4px solid var(--ok)}
+  .task[data-state="mod"]{border-left:4px solid var(--warn)}
+  .task[data-state="del"]{border-left:4px solid var(--bad);opacity:.72}
+  .task .thead{display:flex;align-items:center;gap:12px;padding:16px 20px;cursor:pointer;user-select:none;}
+  .task .caret{transition:.2s;color:var(--muted);font-size:12px;}
+  .task.collapsed .caret{transform:rotate(-90deg);}
+  .task .tid{background:var(--brand-2);color:#fff;font-weight:700;font-size:12.5px;
+    padding:3px 10px;border-radius:7px;letter-spacing:.5px;}
+  .task .ttitle{font-size:16.5px;font-weight:650;flex:1;}
+  .task .tstate{font-size:12px;color:var(--muted);}
+  .task .body{padding:0 20px 18px;}
+  .task.collapsed .body{display:none;}
+  .goal{color:#cfd6e2;margin:0 0 14px;}
+  .grid{display:grid;grid-template-columns:120px 1fr;gap:8px 16px;font-size:13.5px;}
+  .grid .k{color:var(--muted);}
+  .grid .v{color:#dde3ec;}
+  .grid .v ul{margin:0;padding-left:18px;}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .chip{background:var(--chip);border:1px solid var(--line);border-radius:6px;padding:2px 9px;font-size:12px;color:#cbd3df;}
+  .chip.dep{border-color:#3a4a63;color:#a9c2e8;}
+  .contract{background:var(--panel-2);border:1px dashed #3a4150;border-radius:9px;padding:10px 13px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;color:#bcd;white-space:pre-wrap;}
+  /* decision row */
+  .decision{margin-top:16px;padding-top:14px;border-top:1px dashed var(--line);}
+  .decision .seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;}
+  .decision .seg label{padding:6px 14px;font-size:13px;cursor:pointer;color:var(--muted);border-right:1px solid var(--line);}
+  .decision .seg label:last-child{border-right:0}
+  .decision .seg input{display:none}
+  .decision .seg input:checked + span{color:#fff}
+  .decision .seg label:has(input[value="ok"]:checked){background:#0e2a1e;color:var(--ok)}
+  .decision .seg label:has(input[value="mod"]:checked){background:#2a2113;color:var(--warn)}
+  .decision .seg label:has(input[value="del"]:checked){background:#2a1416;color:var(--bad)}
+  .decision textarea{width:100%;margin-top:10px;background:var(--bg);color:var(--txt);border:1px solid var(--line);
+    border-radius:8px;padding:9px 11px;font:13px/1.5 inherit;resize:vertical;min-height:38px;}
+  .decision .note-wrap{display:none}
+  .decision .note-wrap.show{display:block}
+  /* open questions */
+  .ask{background:#2a2113;border:1px solid #5a4413;border-left:4px solid var(--warn);
+    border-radius:12px;padding:16px 18px;margin-top:18px;}
+  .ask h2{color:var(--warn);margin-top:0;font-size:15px;text-transform:none;letter-spacing:0;}
+  .ask ol{margin:6px 0 0;padding-left:20px;color:#e8dcc0;}
+  /* export (closed-loop) */
+  .export{margin-top:30px;background:linear-gradient(135deg,#10231a,#13261c);
+    border:1px solid #1f6f47;border-radius:14px;padding:22px 24px;}
+  .export h2{margin:0 0 6px;color:var(--ok);font-size:16px;text-transform:none;letter-spacing:0;}
+  .export p{margin:0 0 12px;color:#c4e7d4;font-size:13.5px;}
+  .export .global-note{width:100%;background:var(--bg);color:var(--txt);border:1px solid #1f6f47;
+    border-radius:8px;padding:10px 12px;font:13.5px/1.5 inherit;resize:vertical;min-height:42px;margin-bottom:12px;}
+  .export .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;}
+  .export pre{background:#0c1a13;border:1px solid #1f6f47;border-radius:9px;padding:14px;color:#a7f3c0;
+    font:12.5px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre-wrap;max-height:300px;overflow:auto;margin:0;}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:14px;font-size:12px;color:var(--muted);}
+  .sev{display:inline-flex;align-items:center;gap:5px;}
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
+  .dot.p0{background:var(--p0)} .dot.p1{background:var(--p1)} .dot.p2{background:var(--p2)}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0e2a1e;color:var(--ok);
+    border:1px solid #1f6f47;border-radius:10px;padding:10px 18px;font-size:13.5px;opacity:0;
+    transition:.25s;pointer-events:none;}
+  .toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <h1>任务拆解确认稿 · {{FEATURE}}</h1>
+    <div class="sub">subagent-dev-orchestrator · 模式 B（描述驱动）· 这是一个可交互的确认界面，请逐项决策</div>
+    <div class="meta">
+      <span class="pill">入口模式：<b>{{MODE}}</b></span>
+      <span class="pill">任务数：<b>{{TASK_COUNT}}</b></span>
+      <span class="pill">生成时间：<b>{{GENERATED_AT}}</b></span>
+      <span class="pill">复审基准：<b>需求描述 + 本稿口述契约 + 项目规范</b></span>
+    </div>
+  </header>
+
+  <div class="banner">
+    <div class="ic">🧩</div>
+    <div>
+      <h3>AI 生成的是界面，不是文档——请操作它</h3>
+      <p>逐个任务选择 <b>通过 / 需修改 / 删除</b>（需修改可填具体意见），完成后点底部「生成回复给 Claude」，把生成的文本复制回对话即可。确认通过的任务，主会话才会逐个开子 agent 实现 + codex 复审（无 P0/P1 才放行下一个）。</p>
+    </div>
+  </div>
+
+  <section class="summary">
+    <h2>需求摘要</h2>
+    <div>{{SUMMARY}}</div>
+  </section>
+
+  <div class="toolbar">
+    <span class="count">
+      <span class="badge ok" id="cnt-ok">0</span> 通过
+      <span class="badge mod" id="cnt-mod">0</span> 需修改
+      <span class="badge del" id="cnt-del">0</span> 删除
+      &nbsp;/&nbsp; 共 <b id="cnt-total">0</b> 个任务
+    </span>
+    <span class="spacer"></span>
+    <button class="btn" onclick="setAll('ok')">全部通过</button>
+    <button class="btn" onclick="toggleAll()">展开/折叠</button>
+  </div>
+
+  <h2 class="section">任务清单（串行执行顺序）</h2>
+
+  <div id="tasks">
+  {{TASK_CARDS}}
+  <!-- ↓ 每个任务复制此片段填充（data-tid / data-title 必填，供 JS 汇总）↓
+  <article class="task" data-tid="T1" data-title="优惠券领取接口" data-state="ok">
+    <div class="thead" onclick="toggleCard(this)">
+      <span class="caret">▾</span>
+      <span class="tid">T1</span>
+      <span class="ttitle">优惠券领取接口</span>
+      <span class="tstate"></span>
+    </div>
+    <div class="body">
+      <p class="goal">POST /api/coupon/claim，幂等领取并扣减库存。</p>
+      <div class="grid">
+        <span class="k">验收标准</span>
+        <span class="v"><ul><li>同一用户重复领取返回同一结果</li><li>库存为 0 返回 4090 已领完</li></ul></span>
+        <span class="k">依赖</span>
+        <span class="v"><div class="chips"><span class="chip dep">无</span></div></span>
+        <span class="k">口述契约</span>
+        <span class="v"><div class="contract">请求: {couponId:long}
+响应: {code:int, data:{claimId:long}}
+错误码: 4090=已领完, 4091=不可重复领</div></span>
+        <span class="k">影响表/字段</span>
+        <span class="v"><div class="chips"><span class="chip">coupon</span><span class="chip">coupon_claim</span></div></span>
+      </div>
+      <div class="decision">
+        <div class="seg">
+          <label><input type="radio" name="d-T1" value="ok" checked onchange="onDecision(this)"><span>✓ 通过</span></label>
+          <label><input type="radio" name="d-T1" value="mod" onchange="onDecision(this)"><span>✎ 需修改</span></label>
+          <label><input type="radio" name="d-T1" value="del" onchange="onDecision(this)"><span>✕ 删除</span></label>
+        </div>
+        <div class="note-wrap"><textarea placeholder="修改/删除意见（会原样带回给 Claude）"></textarea></div>
+      </div>
+    </div>
+  </article>
+  ↑ 片段结束 ↑ -->
+  </div>
+
+  <div class="ask">
+    <h2>待澄清问题（如有）</h2>
+    <ol>{{OPEN_QUESTIONS}}</ol>
+  </div>
+
+  <section class="export">
+    <h2>✅ 生成回复给 Claude（用完即弃编辑器闭环）</h2>
+    <p>填写总体意见（可选）→ 点击「生成回复」→ 复制下方文本，粘贴回 Claude 对话继续。</p>
+    <textarea class="global-note" id="globalNote" placeholder="总体意见 / 补充约束（可选）"></textarea>
+    <div class="row">
+      <button class="btn primary" onclick="buildReply()">生成回复</button>
+      <button class="btn" onclick="copyReply()">复制</button>
+    </div>
+    <pre id="reply">（点击「生成回复」后在此显示）</pre>
+    <div class="legend">
+      <span>后续 codex 复审级别：</span>
+      <span class="sev"><span class="dot p0"></span>P0 阻断·必修</span>
+      <span class="sev"><span class="dot p1"></span>P1 严重·必修</span>
+      <span class="sev"><span class="dot p2"></span>P2 次要·可延后记 CHANGELOG</span>
+    </div>
+  </section>
+
+</div>
+<div class="toast" id="toast">已复制到剪贴板</div>
+
+<script>
+  const FEATURE = "{{FEATURE}}";
+  function tasks(){ return [...document.querySelectorAll('#tasks .task')]; }
+  function stateOf(t){ const c=t.querySelector('input[type=radio]:checked'); return c?c.value:'ok'; }
+
+  function toggleCard(head){ head.closest('.task').classList.toggle('collapsed'); }
+  function toggleAll(){
+    const anyOpen = tasks().some(t=>!t.classList.contains('collapsed'));
+    tasks().forEach(t=>t.classList.toggle('collapsed', anyOpen));
+  }
+  function setAll(v){
+    tasks().forEach(t=>{
+      const r=t.querySelector(`input[value="${v}"]`); if(r){ r.checked=true; onDecision(r); }
+    });
+  }
+  function onDecision(radio){
+    const t=radio.closest('.task'); const v=radio.value;
+    t.dataset.state=v;
+    const nw=t.querySelector('.note-wrap'); nw.classList.toggle('show', v!=='ok');
+    t.querySelector('.tstate').textContent = v==='ok'?'通过':(v==='mod'?'需修改':'删除');
+    refreshCounts();
+  }
+  function refreshCounts(){
+    let ok=0,mod=0,del=0;
+    tasks().forEach(t=>{ const s=stateOf(t); if(s==='ok')ok++; else if(s==='mod')mod++; else del++; });
+    document.getElementById('cnt-ok').textContent=ok;
+    document.getElementById('cnt-mod').textContent=mod;
+    document.getElementById('cnt-del').textContent=del;
+    document.getElementById('cnt-total').textContent=tasks().length;
+  }
+  function buildReply(){
+    const lines=[`=== 任务拆解确认结果 · ${FEATURE} ===`];
+    const g=document.getElementById('globalNote').value.trim();
+    if(g) lines.push(`总体意见: ${g}`);
+    lines.push('');
+    let allOk=true;
+    tasks().forEach(t=>{
+      const id=t.dataset.tid, title=t.dataset.title, s=stateOf(t);
+      const note=(t.querySelector('.decision textarea')?.value||'').trim();
+      if(s==='ok'){ lines.push(`${id} ${title}: 通过`); }
+      else if(s==='mod'){ allOk=false; lines.push(`${id} ${title}: 需修改 — ${note||'(未填写具体意见)'}`); }
+      else { allOk=false; lines.push(`${id} ${title}: 删除 — ${note||'(未填写原因)'}`); }
+    });
+    lines.push('');
+    lines.push(allOk ? '结论: 全部通过，请按此顺序逐任务开发 + codex 复审。'
+                     : '结论: 有任务需修改/删除，请先据此更新拆解并重新生成确认稿。');
+    document.getElementById('reply').textContent=lines.join('\n');
+  }
+  function copyReply(){
+    const txt=document.getElementById('reply').textContent;
+    navigator.clipboard?.writeText(txt).then(showToast, ()=>fallbackCopy(txt));
+  }
+  function fallbackCopy(txt){
+    const ta=document.createElement('textarea'); ta.value=txt; document.body.appendChild(ta);
+    ta.select(); try{document.execCommand('copy');showToast();}catch(e){} ta.remove();
+  }
+  function showToast(){
+    const el=document.getElementById('toast'); el.classList.add('show');
+    setTimeout(()=>el.classList.remove('show'),1600);
+  }
+  refreshCounts();
+</script>
+</body>
+</html>

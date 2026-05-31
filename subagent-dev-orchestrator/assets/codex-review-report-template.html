@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!--
+  codex 复审结果可视化报告（可选人类视图，自包含 HTML）。
+  设计参考 Thariq《The Unreasonable Effectiveness of HTML》代码审查旗舰案例：
+    颜色编码 + 严重度标记 + 内联 file:line + 折叠面板，一眼看清要修什么。
+  用途：把 codex:rescue 的某一轮复审结论渲染给用户看（任务级把关的可视化呈现）。
+  主会话据 codex 文本输出填充；纯展示，不改变「无 P0/P1 才放行」的判定逻辑。
+  占位符：{{FEATURE}} {{TASK_ID}} {{TASK_TITLE}} {{ROUND}} {{VERDICT}} {{GENERATED_AT}}
+          {{CNT_P0}} {{CNT_P1}} {{CNT_P2}} {{FINDINGS}}
+  finding 片段见 {{FINDINGS}} 注释。
+-->
+<title>codex 复审 · {{TASK_ID}} {{TASK_TITLE}}（第 {{ROUND}} 轮）</title>
+<style>
+  :root{--bg:#0f1115;--panel:#171a21;--panel-2:#1e222b;--line:#2a2f3a;--txt:#e6e9ef;--muted:#9aa3b2;
+    --p0:#ef4444;--p1:#f97316;--p2:#fbbf24;--ok:#34d399;--brand:#5b9dff;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;}
+  .wrap{max-width:1000px;margin:0 auto;padding:32px 20px 80px;}
+  header.hero{background:linear-gradient(135deg,#1b2435,#141821);border:1px solid var(--line);
+    border-radius:16px;padding:24px 28px;margin-bottom:20px;}
+  .hero h1{margin:0 0 6px;font-size:21px;}
+  .hero .sub{color:var(--muted);font-size:13px;}
+  .verdict{display:inline-flex;align-items:center;gap:8px;margin-top:14px;padding:8px 16px;border-radius:10px;
+    font-weight:650;font-size:14px;}
+  .verdict.pass{background:#0e2a1e;color:var(--ok);border:1px solid #1f6f47;}
+  .verdict.fail{background:#2a1416;color:var(--p0);border:1px solid #6b2326;}
+  .stats{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0 22px;}
+  .stat{flex:1;min-width:130px;background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:14px 16px;text-align:center;}
+  .stat .n{font-size:26px;font-weight:700;}
+  .stat .l{font-size:12px;color:var(--muted);margin-top:2px;}
+  .stat.p0 .n{color:var(--p0)} .stat.p1 .n{color:var(--p1)} .stat.p2 .n{color:var(--p2)}
+  h2.section{font-size:13px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);margin:20px 4px 12px;}
+  .filter{display:flex;gap:8px;margin-bottom:14px;}
+  .filter button{background:var(--panel-2);color:var(--muted);border:1px solid var(--line);border-radius:8px;
+    padding:6px 13px;font-size:13px;cursor:pointer;}
+  .filter button.active{color:#fff;border-color:var(--brand);background:#1d2a44;}
+  .finding{background:var(--panel);border:1px solid var(--line);border-radius:12px;margin-bottom:12px;overflow:hidden;}
+  .finding[data-sev="P0"]{border-left:4px solid var(--p0)}
+  .finding[data-sev="P1"]{border-left:4px solid var(--p1)}
+  .finding[data-sev="P2"]{border-left:4px solid var(--p2)}
+  .fhead{display:flex;align-items:center;gap:12px;padding:14px 18px;cursor:pointer;}
+  .sevtag{font-weight:700;font-size:12px;padding:3px 9px;border-radius:6px;}
+  .sevtag.P0{background:#2a1416;color:var(--p0)} .sevtag.P1{background:#2a1a12;color:var(--p1)} .sevtag.P2{background:#2a2113;color:var(--p2)}
+  .floc{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;color:var(--brand);}
+  .ftitle{flex:1;font-weight:600;}
+  .fbody{padding:0 18px 16px;display:none;}
+  .finding.open .fbody{display:block;}
+  .fbody .row{margin:8px 0;font-size:13.5px;}
+  .fbody .row .k{color:var(--muted);display:block;font-size:12px;margin-bottom:2px;}
+  .fix{background:var(--panel-2);border:1px dashed #3a4150;border-radius:9px;padding:10px 13px;
+    font-size:13px;color:#cfe;white-space:pre-wrap;}
+  .empty{background:#0e2a1e;border:1px solid #1f6f47;border-radius:12px;padding:20px;text-align:center;color:var(--ok);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <h1>codex 复审报告 · {{TASK_ID}} {{TASK_TITLE}}</h1>
+    <div class="sub">{{FEATURE}} · 第 {{ROUND}} 轮 · {{GENERATED_AT}} · 放行线：无 P0 且无 P1</div>
+    <!-- VERDICT: pass / fail -->
+    <div class="verdict {{VERDICT}}">{{VERDICT_TEXT}}</div>
+  </header>
+
+  <div class="stats">
+    <div class="stat p0"><div class="n">{{CNT_P0}}</div><div class="l">P0 阻断 · 必修</div></div>
+    <div class="stat p1"><div class="n">{{CNT_P1}}</div><div class="l">P1 严重 · 必修</div></div>
+    <div class="stat p2"><div class="n">{{CNT_P2}}</div><div class="l">P2 次要 · 可延后</div></div>
+  </div>
+
+  <h2 class="section">问题清单</h2>
+  <div class="filter">
+    <button class="active" onclick="flt(this,'all')">全部</button>
+    <button onclick="flt(this,'P0')">仅 P0</button>
+    <button onclick="flt(this,'P1')">仅 P1</button>
+    <button onclick="flt(this,'P2')">仅 P2</button>
+  </div>
+
+  <div id="findings">
+  {{FINDINGS}}
+  <!-- ↓ 每条问题复制此片段（无问题时用下方 .empty 替代整块）↓
+  <div class="finding" data-sev="P1">
+    <div class="fhead" onclick="this.closest('.finding').classList.toggle('open')">
+      <span class="sevtag P1">P1</span>
+      <span class="floc">CouponClaimService.java:58</span>
+      <span class="ftitle">乐观锁更新未校验受影响行数，库存可能超扣</span>
+    </div>
+    <div class="fbody">
+      <div class="row"><span class="k">问题</span>update 返回 0 时仍当作扣减成功，并发下会超卖。</div>
+      <div class="row"><span class="k">修复建议</span><div class="fix">判断 update 受影响行数，==0 时抛 CouponSoldOutException。</div></div>
+    </div>
+  </div>
+  ↑ 片段结束 ↑
+
+  无 P0/P1/P2 时整块替换为：
+  <div class="empty">✅ 本轮未发现 P0/P1 问题，任务通过，可进入下一个任务。</div>
+  -->
+  </div>
+</div>
+<script>
+  // 默认展开 P0/P1
+  document.querySelectorAll('.finding[data-sev="P0"],.finding[data-sev="P1"]').forEach(f=>f.classList.add('open'));
+  function flt(btn,sev){
+    document.querySelectorAll('.filter button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('#findings .finding').forEach(f=>{
+      f.style.display = (sev==='all'||f.dataset.sev===sev)?'':'none';
+    });
+  }
+</script>
+</body>
+</html>

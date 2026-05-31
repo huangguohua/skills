@@ -1,0 +1,54 @@
+{
+  "_comment": "subagent-dev-orchestrator 通用编排 Skill 配置。复制到其他项目时只改本文件。与 shared-config.json 项目级信息保持一致。",
+  "project": {
+    "name": "AD海外广告系统",
+    "description": "海外广告投放管理平台，含管理后台与 Android 客户端",
+    "prefix": "ad"
+  },
+  "output": {
+    "dir": "specs-mcp/"
+  },
+  "database": {
+    "type": "mcp",
+    "mcp_server": "outside-server",
+    "database_name": "outside_ad_db"
+  },
+  "codebase": {
+    "backend_path": "Ad_Project/eladmin-mp-master/eladmin",
+    "frontend_path": "Ad_Project/eladmin-mp-master/eladmin-web",
+    "backend_framework": "Spring Boot + MyBatis-Plus (eladmin)",
+    "frontend_framework": "Vue2 + ElementUI"
+  },
+  "development": {
+    "coding_standards_path": "doc/development/coding-standards.md",
+    "backend_gotchas_path": "doc/development/backend-gotchas.md",
+    "frontend_gotchas_path": "doc/development/frontend-gotchas.md",
+    "project_structure_path": "doc/development/project-structure.md"
+  },
+  "orchestration": {
+    "tasks_path": "specs-mcp/<feature>/tasks.md",
+    "design_path": "specs-mcp/<feature>/design.md",
+    "changelog_path": "specs-mcp/<feature>/CHANGELOG.md",
+    "log_dir": "logs/",
+    "subagent_type": "general-purpose",
+    "serial": true
+  },
+  "intake": {
+    "_comment": "需求入口模式。auto=按现有产物自动判定 A/B；A=规格驱动(design+tasks)；B=描述驱动(轻量拆解)",
+    "mode": "auto",
+    "mode_b_requires_user_confirm": true,
+    "mode_b_escalate_when_complex": true,
+    "confirm_artifact": "html",
+    "confirm_artifact_path": "specs-mcp/<feature>/tasks-review.html",
+    "confirm_template": "assets/tasks-review-template.html"
+  },
+  "review": {
+    "reviewer": "codex:codex-rescue",
+    "mode": "read-only",
+    "pass_criteria": "no-P0-P1",
+    "severity_levels": ["P0", "P1", "P2"],
+    "blocking_levels": ["P0", "P1"],
+    "deferrable_levels": ["P2"],
+    "max_rounds": 3
+  }
+}
