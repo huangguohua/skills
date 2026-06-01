@@ -1,0 +1,23 @@
+{
+  "_comment": "yunxiao-defect-resolver 配置。复制到其他项目后只改本文件。注意：PAT 是密钥，绝不写在这里——它只从环境变量 YUNXIAO_TOKEN 读取（本文件会进版本库）。读取优先级：命令行参数 > 环境变量 > 本文件 > 内置默认。占位值（形如 <your-xxx>）视为未配置。",
+  "yunxiao": {
+    "_comment": "organization_id / project_id 必填，改成你云效项目的真实值（也可用同名环境变量 YUNXIAO_ORG_ID / YUNXIAO_PROJECT_ID 覆盖）。",
+    "organization_id": "<your-org-id>",
+    "project_id": "<your-project-id>",
+    "base_url": "https://openapi-rdc.aliyuncs.com",
+    "bug_type_name": "缺陷",
+    "todo_state_names": ["待处理", "再次打开"],
+    "resolved_state_name": "已解决"
+  },
+  "pipelines": {
+    "_comment": "可选，仅 SKILL.md 第 10 步 CI/CD 部署用到。不部署可保持占位。{id} 必须是数字 pipelineId（不是流水线页面 URL 里的字母数字短串）。",
+    "backend": {
+      "name": "<backend-pipeline-name>",
+      "id": "<numeric-pipeline-id>"
+    },
+    "frontend": {
+      "name": "<frontend-pipeline-name>",
+      "id": "<numeric-pipeline-id>"
+    }
+  }
+}

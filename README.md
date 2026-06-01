@@ -8,6 +8,7 @@
 |---|---|
 | [`quality-briefing/`](./quality-briefing) | 数据质量监控每周图形化简报：取数 → 分析 → 渲染长图 → 推送钉钉群 |
 | [`subagent-dev-orchestrator/`](./subagent-dev-orchestrator) | 主会话编排 + 子 agent 实现 + codex 复审：逐任务串行开发，每个任务一个独立子会话实现并经 codex 复审无 P0/P1 才进入下一个 |
+| [`yunxiao-defect-resolver/`](./yunxiao-defect-resolver) | 阿里云云效缺陷修复闭环：单条循环拉缺陷 → 定位修复 → codex:rescue 复审 → 推「已解决」并回写评论。技术栈无关，改 `config.json` + `export YUNXIAO_TOKEN` 即用 |
 
 每个子目录都是一个独立技能，入口是该目录下的 `SKILL.md`。
 
