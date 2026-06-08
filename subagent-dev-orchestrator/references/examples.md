@@ -11,7 +11,7 @@ prompt:（按 assets/subagent-task-prompt-template.md 填充）
   目标：POST /api/coupon/claim，幂等领取，库存扣减
   验收：见 tasks.md T3 验收标准
   契约：见 design.md §4.2（请求/响应字段、错误码）
-  代码库：Ad_Project/eladmin-mp-master/eladmin（Spring Boot + MyBatis-Plus）
+  代码库：<后端代码库路径>（如 Spring Boot + MyBatis-Plus）
   规范：doc/development/coding-standards.md、backend-gotchas.md
   边界：只实现 T3；完成后汇报改动文件清单与关键决策。
 ```

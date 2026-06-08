@@ -1,0 +1,62 @@
+{
+  "_comment": "通用 Skill 配置。优先以 ../shared-config.json 为准；本文件是同步后的本地副本。复制整个仓库后填 shared-config.json 并运行 sync-config.py 同步。",
+  "project": {
+    "name": "",
+    "description": "",
+    "prefix": ""
+  },
+  "output": {
+    "dir": "specs-mcp/"
+  },
+  "database": {
+    "type": "mcp",
+    "mcp_server": "",
+    "database_name": ""
+  },
+  "codebase": {
+    "backend_path": "",
+    "frontend_path": "",
+    "backend_framework": "",
+    "frontend_framework": ""
+  },
+  "design_system": {
+    "style_guide_path": "doc/design-system/style-guide.md",
+    "component_rules_path": "doc/design-system/component-rules.md",
+    "page_templates_path": "doc/design-system/page-templates.md",
+    "design_language": "",
+    "component_system": "",
+    "layout_mode": ""
+  },
+  "development": {
+    "coding_standards_path": "doc/development/coding-standards.md",
+    "backend_gotchas_path": "doc/development/backend-gotchas.md",
+    "frontend_gotchas_path": "doc/development/frontend-gotchas.md",
+    "project_structure_path": "doc/development/project-structure.md"
+  },
+  "testing": {
+    "test_strategy": "api-first",
+    "test_env": "local",
+    "test_gotchas_path": "doc/testing/test-gotchas.md",
+    "env_start_script": "",
+    "env_status_script": ""
+  },
+  "deployment": {
+    "platform": "",
+    "deploy_runbook_path": "doc/deployment/deploy-runbook.md",
+    "rollback_runbook_path": "doc/deployment/rollback-runbook.md"
+  },
+  "orchestration": {
+    "sub_skills": [
+      "backend-development",
+      "frontend-development"
+    ],
+    "manual_trigger_only": [
+      "delivery-code-review"
+    ],
+    "changelog_path": "specs-mcp/<feature>/CHANGELOG.md",
+    "review_report_path": "specs-mcp/<feature>/REVIEW_REPORT.md",
+    "test_report_path": "specs-mcp/<feature>/test-report.md",
+    "tasks_path": "specs-mcp/<feature>/tasks.md",
+    "log_dir": "logs/"
+  }
+}

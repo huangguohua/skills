@@ -1,0 +1,52 @@
+{
+  "name": "prototype-demo",
+  "version": "1.1.0",
+  "description": "将 prototype-generate 按二级菜单拆分产出的多个 HTML 原型文件，组装为可供业务方完整演示的单文件交互原型。后台端 + H5 端分别输出。",
+  "author": "",
+  "upstream": "prototype-generate",
+  "project": {
+    "name": "",
+    "description": "",
+    "prefix": ""
+  },
+  "input": {
+    "source_dir": "specs-mcp/{feature-name}/",
+    "file_pattern": "{feature-name}*.html",
+    "exclude_pattern": "DEMO-*.html",
+    "terminal_detection": {
+      "mobile_suffix": "-H5",
+      "_note": "文件名含 -H5（在模块名之后、.html 之前）= 小程序/H5；不含 = 管理端"
+    },
+    "module_inference": {
+      "pattern": "{feature-name}-{module}[-H5].html",
+      "_note": "从文件名中部提取 module 字段，用于左侧菜单/TabBar 分组"
+    }
+  },
+  "output": {
+    "dir": "specs-mcp/{feature-name}/",
+    "admin_filename": "DEMO-{feature-name}-admin.html",
+    "mobile_filename": "DEMO-{feature-name}-mobile.html",
+    "_note": "与 prototype-generate 输出放在同一 feature 目录下，不新建子目录。mobile 文件仅当存在至少一个 -H5 源文件时输出。"
+  },
+  "assembly": {
+    "preserve_visual": true,
+    "preserve_data_page": true,
+    "namespace_isolation": "page-{page-key}",
+    "cross_html_link_rewrite": "window.location.href → navigate({pageKey})",
+    "_note": "组装阶段不修改原页面视觉内容；保留 data-page 属性以便后续 .pen 对齐；跨 HTML 跳转改为同文件内路由调用"
+  },
+  "design_system": {
+    "style_guide_path": "doc/design-system/style-guide.md",
+    "component_rules_path": "doc/design-system/component-rules.md",
+    "page_templates_path": "doc/design-system/page-templates.md",
+    "design_language": "",
+    "component_system": "",
+    "layout_mode": ""
+  },
+  "gates": {
+    "non_blocking": true,
+    "_note": "prototype-demo 不阻断 prototype-generate 的闸门 ①（HTML 确认）和闸门 ②（.pen 确认）；仅作为演示稿辅助产物"
+  },
+  "output_directory_legacy": "outputs/",
+  "_comment": "通用 Skill 配置。优先以 ../shared-config.json 为准；本文件是同步后的本地副本。复制整个仓库后填 shared-config.json 并运行 sync-config.py 同步。"
+}

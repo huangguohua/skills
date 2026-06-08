@@ -1,0 +1,67 @@
+{
+  "_comment": "通用 Skill 配置。优先以 ../shared-config.json 为准；本文件是同步后的本地副本。复制整个仓库后填 shared-config.json 并运行 sync-config.py 同步。",
+  "project": {
+    "name": "",
+    "description": "",
+    "prefix": ""
+  },
+  "output": {
+    "_comment": "本 Skill 不强制产出规格文档；仅在 log_dir 下记录每次循环日志。",
+    "log_dir": "logs/"
+  },
+  "database": {
+    "type": "mcp",
+    "mcp_server": "",
+    "database_name": ""
+  },
+  "codebase": {
+    "backend_path": "",
+    "frontend_path": "",
+    "backend_framework": "",
+    "frontend_framework": ""
+  },
+  "diagnostics": {
+    "_comment": "定位问题的可选信息源。无则留空；本 Skill 不依赖任何特定来源，按需取用。",
+    "prod_log_access": {
+      "_comment": "生产日志获取方式。ssh 命令模板，<X> 为占位；无远程访问时置 null。敏感凭证走本机 ~/.ssh，禁止写入本文件。",
+      "type": "ssh",
+      "host": "",
+      "port": 22,
+      "user": "",
+      "identity_file": "",
+      "log_path": ""
+    },
+    "coding_standards_path": "doc/development/coding-standards.md",
+    "backend_gotchas_path": "doc/development/backend-gotchas.md",
+    "frontend_gotchas_path": "doc/development/frontend-gotchas.md"
+  },
+  "review": {
+    "_comment": "codex 复审循环参数。reviewer 走 Agent 工具的 subagent_type，禁止用 Skill() 调用。",
+    "reviewer": "codex:codex-rescue",
+    "mode": "read-only",
+    "pass_criteria": "no-blocking",
+    "severity_levels": [
+      "HIGH",
+      "MEDIUM",
+      "LOW",
+      "SUGGESTION"
+    ],
+    "blocking_levels": [
+      "HIGH",
+      "MEDIUM"
+    ],
+    "deferrable_levels": [
+      "LOW",
+      "SUGGESTION"
+    ],
+    "resume_same_thread": true,
+    "max_rounds": 4
+  },
+  "handoff": {
+    "_comment": "循环通过后可选衔接的下游动作。本 Skill 只提示，不自动触发高风险步骤。",
+    "suggest_build": true,
+    "suggest_test": true,
+    "suggest_deploy_skill": "project-release-deploy",
+    "high_risk_requires_user_confirm": true
+  }
+}

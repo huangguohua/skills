@@ -19,45 +19,37 @@
     "backend_framework": "",
     "frontend_framework": ""
   },
+  "design_system": {
+    "style_guide_path": "doc/design-system/style-guide.md",
+    "component_rules_path": "doc/design-system/component-rules.md",
+    "page_templates_path": "doc/design-system/page-templates.md",
+    "design_language": "",
+    "component_system": "",
+    "layout_mode": ""
+  },
   "development": {
     "coding_standards_path": "doc/development/coding-standards.md",
     "backend_gotchas_path": "doc/development/backend-gotchas.md",
     "frontend_gotchas_path": "doc/development/frontend-gotchas.md",
     "project_structure_path": "doc/development/project-structure.md"
   },
-  "orchestration": {
+  "testing": {
+    "test_strategy": "api-first",
+    "test_env": "local",
+    "test_gotchas_path": "doc/testing/test-gotchas.md",
+    "env_start_script": "",
+    "env_status_script": ""
+  },
+  "deployment": {
+    "platform": "",
+    "deploy_runbook_path": "doc/deployment/deploy-runbook.md",
+    "rollback_runbook_path": "doc/deployment/rollback-runbook.md"
+  },
+  "backend": {
     "tasks_path": "specs-mcp/<feature>/tasks.md",
     "design_path": "specs-mcp/<feature>/design.md",
     "changelog_path": "specs-mcp/<feature>/CHANGELOG.md",
-    "log_dir": "logs/",
-    "subagent_type": "general-purpose",
-    "serial": true
-  },
-  "intake": {
-    "_comment": "需求入口模式。auto=按现有产物自动判定 A/B；A=规格驱动(design+tasks)；B=描述驱动(轻量拆解)",
-    "mode": "auto",
-    "mode_b_requires_user_confirm": true,
-    "mode_b_escalate_when_complex": true,
-    "confirm_artifact": "html",
-    "confirm_artifact_path": "specs-mcp/<feature>/tasks-review.html",
-    "confirm_template": "assets/tasks-review-template.html"
-  },
-  "review": {
-    "reviewer": "codex:codex-rescue",
-    "mode": "read-only",
-    "pass_criteria": "no-P0-P1",
-    "severity_levels": [
-      "P0",
-      "P1",
-      "P2"
-    ],
-    "blocking_levels": [
-      "P0",
-      "P1"
-    ],
-    "deferrable_levels": [
-      "P2"
-    ],
-    "max_rounds": 3
+    "review_report_path": "specs-mcp/<feature>/REVIEW_REPORT.md",
+    "log_dir": "logs/"
   }
 }
