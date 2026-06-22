@@ -1,0 +1,69 @@
+{
+  "_comment": "codex-verified-requirement-design 通用「需求设计→codex 复审循环」Skill 配置。复制到其他项目时只改本文件即可用；输出位置/数据库/现状信息源/复审参数全部从这里读，SKILL.md 不写死任何项目信息。",
+  "project": {
+    "name": "二维码云胶片综合平台",
+    "description": "二维码+云胶片平台，含新系统(Spring Boot)、多个前端应用及老系统(PHP/CI3)",
+    "prefix": "qrcode"
+  },
+  "output": {
+    "_comment": "需求文档与循环日志的落点。<feature> 为本次需求的 kebab-case 名。与项目工作流约定一致：规格统一放 specs-mcp/<feature>/。",
+    "output_dir": "specs-mcp",
+    "requirements_file": "requirements.md",
+    "log_path": "specs-mcp/<feature>/requirement-review-loop.md"
+  },
+  "database": {
+    "_comment": "对齐现状时若需查真实数据/DDL，必须走 MCP，禁止猜表结构。多库时在 servers 里逐一登记，按用途选择；新老系统库相互独立。",
+    "type": "mcp",
+    "mcp_server": "tools-server",
+    "database_name": "tools_db",
+    "servers": [
+      {
+        "mcp_server": "tools-server",
+        "database_name": "tools_db",
+        "usage": "新系统主库（会员/模板/支付/优惠券/云胶片）"
+      },
+      {
+        "mcp_server": "sys_appsys_server",
+        "database_name": "sys_appsys_server",
+        "usage": "老系统数据库（PHP/CI3，仅查 DDL 与业务数据）"
+      }
+    ]
+  },
+  "context": {
+    "_comment": "对齐现状的信息源：用于判断需求与现有实现的关系（复用/改造/新增）。无则留空。",
+    "discovery_optional": true,
+    "discovery_path_tpl": "specs-mcp/<feature>/discovery.md",
+    "codebase": {
+      "backend_path": "eladmin",
+      "backend_framework": "Spring Boot 2.7.18 + MyBatis-Plus",
+      "frontend_path": "eladmin-web",
+      "frontend_framework": "Vue2 + Element UI",
+      "h5_path": "qrcode-h5",
+      "h5_framework": "Vue3 + Vite",
+      "miniprogram_path": "qrcode-weixin-native",
+      "miniprogram_framework": "微信原生小程序（主力扫码端）",
+      "app_path": "qrcode-app-rn",
+      "app_framework": "Expo SDK 56 / React Native（小料二维码生成器 App）"
+    },
+    "domain_rules_path": "doc/01-overview.md"
+  },
+  "review": {
+    "_comment": "codex 复审循环参数。reviewer 走 Agent 工具的 subagent_type，禁止用 Skill() 调用。dimensions 为需求质量维度（非代码维度），提示词里必须显式声明这是需求文档评审。",
+    "reviewer": "codex:codex-rescue",
+    "mode": "read-only",
+    "pass_criteria": "no-blocking",
+    "dimensions": ["完整性", "一致性", "可实现性", "可测试性", "范围"],
+    "severity_levels": ["HIGH", "MEDIUM", "LOW", "SUGGESTION"],
+    "blocking_levels": ["HIGH", "MEDIUM"],
+    "deferrable_levels": ["LOW", "SUGGESTION"],
+    "resume_same_thread": true,
+    "max_rounds": 4
+  },
+  "handoff": {
+    "_comment": "需求 codex 把关 CLEAR 后可衔接的下游 Skill。本 Skill 只提示，不自动启动；下游由用户确认后再触发（闸门见 CLAUDE.md 工作流）。",
+    "suggest_business_review_skill": "business-requirement-review",
+    "suggest_ui_baseline_skill": "ui-design-baseline",
+    "suggest_architect_skill": "architect-design",
+    "high_risk_requires_user_confirm": true
+  }
+}

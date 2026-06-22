@@ -40,7 +40,8 @@ SUITE=(
   architect-design technical-design-review project-dev-init
   development-orchestrator subagent-dev-orchestrator
   backend-development frontend-development testing-expert
-  delivery-code-review codex-verified-fix-loop project-release-deploy
+  delivery-code-review codex-verified-fix-loop codex-verified-requirement-design
+  project-release-deploy
 )
 
 if [[ -z "$SKILL" || -z "$TARGET" ]]; then

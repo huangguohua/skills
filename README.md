@@ -25,6 +25,7 @@
 | 测试 | [`testing-expert`](./testing-expert) | 设计用例 + 执行 + `test-report.md` |
 | 代码审查 | [`delivery-code-review`](./delivery-code-review) | 结构化审查，产出 `REVIEW_REPORT.md` |
 | 验证修复闭环 | [`codex-verified-fix-loop`](./codex-verified-fix-loop) | 定位 → 修复 → codex 复审循环（单缺陷/小需求） |
+| 需求验证闭环 | [`codex-verified-requirement-design`](./codex-verified-requirement-design) | 写需求 → codex 五维度复审循环 → 直到 CLEAR（产出经把关的需求规格） |
 | 发布 | [`project-release-deploy`](./project-release-deploy) | 按部署配置执行发布 |
 
 > 套件的强制闸门、阶段流转与协作规则见各 `SKILL.md`。
